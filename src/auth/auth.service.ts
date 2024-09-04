@@ -5,8 +5,8 @@ import { User } from './schemas/user.schema';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { Model } from 'mongoose';
-import { SignUpDto } from './schemas/dto/signUp.dto';
-import { LoginDto } from './schemas/dto/login.dto';
+import { SignUpDto } from './dto/signUp.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -17,7 +17,7 @@ export class AuthService {
   ) {}
 
   async signUp(signUpDto: SignUpDto): Promise<{ token: string }> {
-    const { name, email, password } = signUpDto;
+    const { name, email, password, role } = signUpDto;
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -25,6 +25,7 @@ export class AuthService {
       name,
       email,
       password: hashedPassword,
+      role,
     });
 
     const token = this.jwtService.sign({ id: user._id });
