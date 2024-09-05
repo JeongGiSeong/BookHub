@@ -1,6 +1,5 @@
-import { IsEmpty, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { Category } from '../schemas/book.schema';
-import { User } from 'src/auth/schemas/user.schema';
 
 export class UpdateBookDto {
   @IsOptional()
@@ -9,20 +8,25 @@ export class UpdateBookDto {
 
   @IsOptional()
   @IsString()
-  readonly description: string;
+  readonly subtitle: string;
+
+  @IsOptional()
+  @IsString()
+  readonly summary: string;
 
   @IsOptional()
   @IsString()
   readonly author: string;
 
   @IsOptional()
-  @IsNumber()
-  readonly price: number;
-
-  @IsOptional()
   @IsEnum(Category, { message: 'Invalid category' })
   readonly category: Category;
 
-  @IsEmpty({ message: 'User is not allowed' })
-  readonly user: User;
+  @IsOptional()
+  @IsString()
+  readonly coverImage: string;
+
+  @IsOptional()
+  @IsString()
+  readonly yes24Link: string;
 }

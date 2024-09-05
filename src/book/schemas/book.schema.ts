@@ -1,6 +1,4 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose from 'mongoose';
-import { User } from 'src/auth/schemas/user.schema';
 
 export enum Category {
   ADVENTURE = 'Adventure',
@@ -17,19 +15,25 @@ export class Book {
   title: string;
 
   @Prop()
-  description: string;
+  subtitle: string;
 
   @Prop()
   author: string;
 
   @Prop()
-  price: number;
-
-  @Prop()
   category: Category;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
-  user: User;
+  @Prop()
+  coverImage: string;
+
+  @Prop()
+  yes24url: string;
+
+  @Prop()
+  publisher: string;
+
+  @Prop()
+  publishedAt: string;
 }
 
 export const BookSchema = SchemaFactory.createForClass(Book);
