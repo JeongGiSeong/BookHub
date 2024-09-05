@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { BookService } from './book.service';
 import { Book } from './schemas/book.schema';
 
@@ -6,6 +6,10 @@ import { Query as ExpressQuery } from 'express-serve-static-core';
 import { ScraperService } from './scraper.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../../src/auth/decorators/role.decorator';
+import { Role } from '../../src/auth/enums/role.enum';
+import { RolesGuard } from '../../src/auth/gurads/roles.guard';
 
 @Controller('books')
 export class BookController {
@@ -25,8 +29,6 @@ export class BookController {
   }
 
   @Post()
-  // @Roles(Role.Admin, Role.Manager)
-  // @UseGuards(AuthGuard())
   async createBook(@Body() createBookDto: CreateBookDto): Promise<Book> {
     const { url } = createBookDto;
     const book = await this.scraperService.scrapeBook(url);
@@ -34,8 +36,6 @@ export class BookController {
   }
 
   @Patch(':id')
-  // @Roles(Role.Admin)
-  // @UseGuards(AuthGuard())
   async updateBook(@Param('id') id: string, @Body() updateBookDto: UpdateBookDto): Promise<Book> {
     const { url } = updateBookDto;
     const book = await this.scraperService.scrapeBook(url);
@@ -43,9 +43,9 @@ export class BookController {
   }
 
   @Delete(':id')
-  // @Roles(Role.Admin)
-  // @UseGuards(AuthGuard())
-  async deleteBook(@Param('id') id: string): Promise<Book> {
+  @Roles(Role.Admin)
+  @UseGuards(AuthGuard(), RolesGuard)
+  async deleteBook(@Param('id') id: string): Promise<{ deleted: boolean }> {
     return this.bookService.deleteById(id);
   }
 }

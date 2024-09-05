@@ -58,7 +58,7 @@ export class BookService {
     });
   }
 
-  async deleteById(id: string): Promise<Book> {
+  async deleteById(id: string): Promise<{ deleted: boolean }> {
     return await this.bookModel.findByIdAndDelete(id);
   }
 }
