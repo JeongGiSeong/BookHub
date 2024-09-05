@@ -32,11 +32,6 @@ export class BookService {
       .skip(skip);
   }
 
-  async create(bookData): Promise<Book> {
-    const res = await this.bookModel.create(bookData);
-    return res;
-  }
-
   async findById(id: string): Promise<Book> {
     const isValidId = mongoose.isValidObjectId(id);
 
@@ -51,8 +46,13 @@ export class BookService {
     return book;
   }
 
-  async updateById(id: string, bookData): Promise<Book> {
-    return await this.bookModel.findByIdAndUpdate(id, bookData, {
+  async create(book: Book): Promise<Book> {
+    const res = await this.bookModel.create(book);
+    return res;
+  }
+
+  async updateById(id: string, book: Book): Promise<Book> {
+    return await this.bookModel.findByIdAndUpdate(id, book, {
       new: true,
       runValidators: true,
     });

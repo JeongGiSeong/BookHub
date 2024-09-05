@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { Book } from './schemas/book.schema';
 
 @Injectable()
 export class ScraperService {
@@ -15,14 +16,15 @@ export class ScraperService {
     const publisher = $('span.gd_pub').text();
     const publishedAt = $('span.gd_date').text();
 
-    return {
-      title,
-      subtitle,
-      author,
-      coverImage,
-      publisher,
-      publishedAt,
-      yes24url: url,
-    };
+    const book = new Book();
+    book.title = title;
+    book.subtitle = subtitle;
+    book.author = author;
+    book.coverImage = coverImage;
+    book.publisher = publisher;
+    book.publishedAt = publishedAt;
+    book.yes24url = url;
+
+    return book;
   }
 }

@@ -29,15 +29,8 @@ export class BookController {
   // @UseGuards(AuthGuard())
   async createBook(@Body() createBookDto: CreateBookDto): Promise<Book> {
     const { url } = createBookDto;
-    const bookData = await this.scraperService.scrapeBook(url);
-    return this.bookService.create(bookData);
-  }
-
-  @Delete(':id')
-  // @Roles(Role.Admin)
-  // @UseGuards(AuthGuard())
-  async deleteBook(@Param('id') id: string): Promise<Book> {
-    return this.bookService.deleteById(id);
+    const book = await this.scraperService.scrapeBook(url);
+    return this.bookService.create(book);
   }
 
   @Patch(':id')
@@ -45,7 +38,14 @@ export class BookController {
   // @UseGuards(AuthGuard())
   async updateBook(@Param('id') id: string, @Body() updateBookDto: UpdateBookDto): Promise<Book> {
     const { url } = updateBookDto;
-    const bookData = await this.scraperService.scrapeBook(url);
-    return this.bookService.updateById(id, bookData);
+    const book = await this.scraperService.scrapeBook(url);
+    return this.bookService.updateById(id, book);
+  }
+
+  @Delete(':id')
+  // @Roles(Role.Admin)
+  // @UseGuards(AuthGuard())
+  async deleteBook(@Param('id') id: string): Promise<Book> {
+    return this.bookService.deleteById(id);
   }
 }
