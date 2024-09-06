@@ -3,7 +3,7 @@ import { BookController } from './book.controller';
 import { BookService } from './book.service';
 import { BookSchema } from './schemas/book.schema';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AuthModule } from 'src/auth/auth.module';
+import { AuthModule } from '../../src/auth/auth.module';
 import { ScraperService } from './scraper.service';
 
 @Module({
