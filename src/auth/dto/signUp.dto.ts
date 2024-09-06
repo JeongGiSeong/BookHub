@@ -1,4 +1,5 @@
 import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { Role } from '../enums/role.enum';
 
 export class SignUpDto {
   @IsNotEmpty()
@@ -15,5 +16,5 @@ export class SignUpDto {
   readonly password: string;
 
   @IsOptional()
-  readonly role: string[];
+  readonly role: Role[];
 }
