@@ -10,7 +10,7 @@ export class ScraperService {
       const { data } = await axios.get(url);
       const $ = cheerio.load(data);
 
-      const title = $('h2.gd_name').text();
+      const title = $('.gd_titArea h2.gd_name').text();
       const subtitle = $('h3.gd_nameE').text();
       const author = $('span.gd_auth').text();
       const coverImage = $('div.gd_img img').attr('src');
