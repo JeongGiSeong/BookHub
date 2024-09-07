@@ -6,6 +6,7 @@ import { CreateReviewDto } from './dtos/create-review.dto';
 import { UpdateReviewDto } from './dtos/update-review.dto';
 
 import { Query } from 'express-serve-static-core';
+import { User } from 'src/auth/schemas/user.schema';
 
 @Injectable()
 export class ReviewService {
@@ -14,23 +15,29 @@ export class ReviewService {
     private reviewModel: Model<Review>
   ) {}
 
-  create(createReviewDto: CreateReviewDto): Review | PromiseLike<Review> {
+  async create(createReviewDto: CreateReviewDto, user: User): Promise<Review> {
+    const { content, bookId } = createReviewDto;
+    const review = new this.reviewModel({
+      content,
+      book: bookId,
+      user: user._id,
+    });
+    return review.save();
+  }
+
+  findAll(query: Query): Promise<Review[]> {
     throw new Error('Method not implemented.');
   }
 
-  findAll(query: Query): Review[] | PromiseLike<Review[]> {
+  findById(id: string): Promise<Review> {
     throw new Error('Method not implemented.');
   }
 
-  findById(id: string): Review | PromiseLike<Review> {
+  updateById(id: string, updateReviewDto: UpdateReviewDto): Promise<Review> {
     throw new Error('Method not implemented.');
   }
 
-  updateById(id: string, updateReviewDto: UpdateReviewDto): Review | PromiseLike<Review> {
-    throw new Error('Method not implemented.');
-  }
-
-  deleteById(id: string): { deleted: boolean } | PromiseLike<{ deleted: boolean }> {
+  deleteById(id: string): Promise<{ deleted: boolean }> {
     throw new Error('Method not implemented.');
   }
 }

@@ -36,12 +36,12 @@ export class BookService {
     const isValidId = mongoose.isValidObjectId(id);
 
     if (!isValidId) {
-      throw new BadRequestException('Invalid book ID');
+      throw new BadRequestException('책 ID가 유효하지 않습니다.');
     }
 
     const book = await this.bookModel.findById(id);
     if (!book) {
-      throw new NotFoundException('Book not found');
+      throw new NotFoundException('책을 찾을 수 없습니다.');
     }
     return book;
   }
