@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Review } from './shema/review.schema';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { CreateReviewDto } from './dtos/create-review.dto';
 import { UpdateReviewDto } from './dtos/update-review.dto';
 
@@ -25,19 +25,48 @@ export class ReviewService {
     return review.save();
   }
 
-  findAll(query: Query): Promise<Review[]> {
-    throw new Error('Method not implemented.');
+  async findAll(query: Query): Promise<Review[]> {
+    const resPerPage = 10;
+    const curPage = Number(query.page) || 1;
+    const skip = (curPage - 1) * resPerPage;
+
+    const keyword = query.keyword
+      ? {
+          title: {
+            $regex: query.keyword,
+            $options: 'i',
+          },
+        }
+      : {};
+
+    return await this.reviewModel
+      .find({ ...keyword })
+      .limit(resPerPage)
+      .skip(skip);
   }
 
-  findById(id: string): Promise<Review> {
-    throw new Error('Method not implemented.');
+  async findById(id: string): Promise<Review> {
+    if (!mongoose.isValidObjectId(id)) {
+      throw new BadRequestException('리뷰 ID가 유효하지 않습니다.');
+    }
+
+    const review = await this.reviewModel.findById(id);
+    if (!review) {
+      throw new BadRequestException('리뷰를 찾을 수 없습니다.');
+    }
+
+    return review;
   }
 
-  updateById(id: string, updateReviewDto: UpdateReviewDto): Promise<Review> {
-    throw new Error('Method not implemented.');
+  async updateById(id: string, updateReviewDto: UpdateReviewDto): Promise<Review> {
+    return await this.reviewModel.findByIdAndUpdate(id, updateReviewDto, {
+      new: true,
+      runValidators: true,
+    });
   }
 
-  deleteById(id: string): Promise<{ deleted: boolean }> {
-    throw new Error('Method not implemented.');
+  async deleteById(id: string): Promise<{ deleted: boolean }> {
+    await this.reviewModel.findByIdAndDelete(id);
+    return { deleted: true };
   }
 }
