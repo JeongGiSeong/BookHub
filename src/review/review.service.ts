@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Review } from './shema/review.schema';
 import mongoose, { Model } from 'mongoose';
@@ -10,6 +10,8 @@ import { User } from 'src/auth/schemas/user.schema';
 
 @Injectable()
 export class ReviewService {
+  private readonly logger = new Logger(ReviewService.name);
+
   constructor(
     @InjectModel(Review.name)
     private reviewModel: Model<Review>
@@ -22,7 +24,9 @@ export class ReviewService {
       book: bookId,
       user: user._id,
     });
-    return review.save();
+    const savedReview = await review.save();
+    this.logger.log(`User[${user._id}]가 Book[${bookId}]에 Review[${savedReview._id}] 작성`);
+    return savedReview;
   }
 
   async findAll(query: Query): Promise<Review[]> {
@@ -32,7 +36,7 @@ export class ReviewService {
 
     const keyword = query.keyword
       ? {
-          title: {
+          content: {
             $regex: query.keyword,
             $options: 'i',
           },
@@ -52,21 +56,39 @@ export class ReviewService {
 
     const review = await this.reviewModel.findById(id);
     if (!review) {
-      throw new BadRequestException('리뷰를 찾을 수 없습니다.');
+      throw new NotFoundException('리뷰를 찾을 수 없습니다.');
     }
 
     return review;
   }
 
   async updateById(id: string, updateReviewDto: UpdateReviewDto): Promise<Review> {
-    return await this.reviewModel.findByIdAndUpdate(id, updateReviewDto, {
+    if (!mongoose.isValidObjectId(id)) {
+      throw new BadRequestException('리뷰 ID가 유효하지 않습니다.');
+    }
+
+    const updatedReview = await this.reviewModel.findByIdAndUpdate(id, updateReviewDto, {
       new: true,
       runValidators: true,
     });
+
+    if (!updatedReview) {
+      throw new NotFoundException('리뷰를 찾을 수 없습니다.');
+    }
+
+    return updatedReview;
   }
 
   async deleteById(id: string): Promise<{ deleted: boolean }> {
-    await this.reviewModel.findByIdAndDelete(id);
+    if (!mongoose.isValidObjectId(id)) {
+      throw new BadRequestException('리뷰 ID가 유효하지 않습니다.');
+    }
+
+    const deletedReview = await this.reviewModel.findByIdAndDelete(id);
+    if (!deletedReview) {
+      throw new NotFoundException('리뷰를 찾을 수 없습니다.');
+    }
+
     return { deleted: true };
   }
 }
