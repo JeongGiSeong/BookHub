@@ -5,15 +5,15 @@ import { AppModule } from './../src/app.module';
 import mongoose from 'mongoose';
 import { Role } from './../src/auth/enums/role.enum';
 
-describe('AuthController (e2e)', () => {
+describe('BookController (e2e)', () => {
   let app: INestApplication;
   let jwtToken: string;
   let createdBook;
 
   const admin = {
-    name: 'rltjd',
-    email: 'rltjd8714@gmail.com',
-    password: 'password',
+    name: 'bookcontroller',
+    email: 'bookcontroller@bookcontroller.com',
+    password: 'bookcontroller',
     role: [Role.User, Role.Admin],
   };
 

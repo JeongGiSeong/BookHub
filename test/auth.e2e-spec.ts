@@ -24,9 +24,9 @@ describe('AuthController (e2e)', () => {
   afterAll(() => mongoose.disconnect());
 
   const user = {
-    name: 'rltjd',
-    email: 'rltjd8714@gmail.com',
-    password: 'password',
+    name: 'authcontroller',
+    email: 'authcontroller@authcontroller.com',
+    password: 'authcontroller',
   };
 
   it('/singup (POST)', () => {
