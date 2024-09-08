@@ -12,6 +12,11 @@ export class BookService {
     private bookModel: Model<Book>
   ) {}
 
+  async create(book: Book): Promise<Book> {
+    const res = await this.bookModel.create(book);
+    return res;
+  }
+
   async findAll(query: Query): Promise<Book[]> {
     const resPerPage = 10;
     const curPage = Number(query.page) || 1;
@@ -33,12 +38,7 @@ export class BookService {
   }
 
   async findById(id: string): Promise<Book> {
-    const isValidId = mongoose.isValidObjectId(id);
-
-    if (!isValidId) {
-      throw new BadRequestException('책 ID가 유효하지 않습니다.');
-    }
-
+    this.validateBookId(id);
     const book = await this.bookModel.findById(id);
     if (!book) {
       throw new NotFoundException('책을 찾을 수 없습니다.');
@@ -46,12 +46,9 @@ export class BookService {
     return book;
   }
 
-  async create(book: Book): Promise<Book> {
-    const res = await this.bookModel.create(book);
-    return res;
-  }
-
   async updateById(id: string, book: Book): Promise<Book> {
+    this.validateBookId(id);
+    await this.validateBookExist(id);
     return await this.bookModel.findByIdAndUpdate(id, book, {
       new: true,
       runValidators: true,
@@ -59,7 +56,23 @@ export class BookService {
   }
 
   async deleteById(id: string): Promise<{ deleted: boolean }> {
+    this.validateBookId(id);
+    await this.validateBookExist(id);
     await this.bookModel.findByIdAndDelete(id);
     return { deleted: true };
+  }
+
+  validateBookId(id: string): void {
+    const isValidId = mongoose.isValidObjectId(id);
+    if (!isValidId) {
+      throw new BadRequestException('책 ID가 유효하지 않습니다.');
+    }
+  }
+
+  async validateBookExist(id: string): Promise<void> {
+    const book = await this.bookModel.findById(id).select('_id');
+    if (!book) {
+      throw new NotFoundException('책을 찾을 수 없습니다.');
+    }
   }
 }

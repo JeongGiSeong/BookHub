@@ -6,7 +6,7 @@ import { CreateReviewDto } from './dtos/create-review.dto';
 import { UpdateReviewDto } from './dtos/update-review.dto';
 
 import { Query } from 'express-serve-static-core';
-import { User } from 'src/auth/schemas/user.schema';
+import { BookService } from 'src/book/book.service';
 
 @Injectable()
 export class ReviewService {
@@ -14,18 +14,24 @@ export class ReviewService {
 
   constructor(
     @InjectModel(Review.name)
-    private reviewModel: Model<Review>
+    private reviewModel: Model<Review>,
+    private bookService: BookService
   ) {}
 
-  async create(createReviewDto: CreateReviewDto, user: User): Promise<Review> {
+  async create(createReviewDto: CreateReviewDto, userId: string): Promise<Review> {
+    // userId는 @Req()로 받아와서 유효성 검사 스킵
+    // 책 유효성 검사
+    this.bookService.validateBookId(createReviewDto.bookId);
+    await this.bookService.validateBookExist(createReviewDto.bookId);
+
     const { content, bookId } = createReviewDto;
-    const review = new this.reviewModel({
+    const review = {
       content,
       book: bookId,
-      user: user._id,
-    });
-    const savedReview = await review.save();
-    this.logger.log(`User[${user._id}]가 Book[${bookId}]에 Review[${savedReview._id}] 작성`);
+      user: userId,
+    };
+    const savedReview = await this.reviewModel.create(review);
+    this.logger.log(`User[${userId}]가 Book[${bookId}]에 Review[${savedReview._id}] 작성`);
     return savedReview;
   }
 
