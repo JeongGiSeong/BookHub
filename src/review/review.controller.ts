@@ -6,14 +6,10 @@ import { UpdateReviewDto } from './dtos/update-review.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { ReviewGuard } from './guards/review.guard';
 import { Review } from './shema/review.schema';
-import { BookService } from 'src/book/book.service';
 
 @Controller('reviews')
 export class ReviewController {
-  constructor(
-    private reviewService: ReviewService,
-    private bookService: BookService
-  ) {}
+  constructor(private reviewService: ReviewService) {}
 
   @Post()
   @UseGuards(AuthGuard())
@@ -22,8 +18,6 @@ export class ReviewController {
     createReviewDto: CreateReviewDto,
     @Req() req
   ): Promise<Review> {
-    // 유효한 bookId인지 확인
-    await this.bookService.findById(createReviewDto.bookId);
     return this.reviewService.create(createReviewDto, req.user);
   }
 
