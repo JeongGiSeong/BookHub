@@ -70,7 +70,7 @@ export class BookService {
   }
 
   async validateBookExist(id: string): Promise<void> {
-    const book = await this.bookModel.findById(id).select('_id');
+    const book = await this.bookModel.findById(id);
     if (!book) {
       throw new NotFoundException('책을 찾을 수 없습니다.');
     }

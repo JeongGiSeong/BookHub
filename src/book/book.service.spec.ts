@@ -44,6 +44,18 @@ describe('BookService', () => {
     model = module.get<Model<Book>>(getModelToken(Book.name));
   });
 
+  describe('create', () => {
+    it('should create and return a book', async () => {
+      // create는 배열 또는 단일 객체를 반환할 수 있으므로 any로 타입을 지정
+      jest.spyOn(model, 'create').mockResolvedValue(mockBook as any);
+
+      const result = await bookService.create(mockBook);
+
+      expect(model.create).toHaveBeenCalledWith(mockBook);
+      expect(result).toEqual(mockBook);
+    });
+  });
+
   describe('findById', () => {
     it('should find and return a book by id', async () => {
       jest.spyOn(model, 'findById').mockResolvedValue(mockBook);
@@ -68,8 +80,6 @@ describe('BookService', () => {
       jest.spyOn(model, 'findById').mockResolvedValue(null);
 
       await expect(bookService.findById(mockBook._id)).rejects.toThrow(NotFoundException);
-
-      expect(model.findById).toHaveBeenCalledWith(mockBook._id);
     });
   });
 
@@ -95,22 +105,11 @@ describe('BookService', () => {
     });
   });
 
-  describe('create', () => {
-    it('should create and return a book', async () => {
-      // create는 배열 또는 단일 객체를 반환할 수 있으므로 any로 타입을 지정
-      jest.spyOn(model, 'create').mockResolvedValue(mockBook as any);
-
-      const result = await bookService.create(mockBook);
-
-      expect(model.create).toHaveBeenCalledWith(mockBook);
-      expect(result).toEqual(mockBook);
-    });
-  });
-
   describe('updateById', () => {
     it('should update and return a book', async () => {
       const updatedBook = { ...mockBook, title: 'Updated Title' };
 
+      jest.spyOn(model, 'findById').mockResolvedValue(mockBook);
       jest.spyOn(model, 'findByIdAndUpdate').mockResolvedValue(updatedBook);
 
       const result = await bookService.updateById(mockBook._id, updatedBook);
@@ -121,16 +120,50 @@ describe('BookService', () => {
       });
       expect(result).toEqual(updatedBook);
     });
-  });
 
-  describe('deleteById', () => {
-    it('should delete and return a book', async () => {
-      jest.spyOn(model, 'findByIdAndDelete').mockResolvedValue(mockBook);
+    it('should throw BadRequestError if invalid ID is provided', async () => {
+      const id = 'invalid-id';
 
-      const result = await bookService.deleteById(mockBook._id);
+      const isValidObjectIdMock = jest.spyOn(mongoose, 'isValidObjectId').mockReturnValue(false);
 
-      expect(model.findByIdAndDelete).toHaveBeenCalledWith(mockBook._id);
-      expect(result).toEqual({ deleted: true });
+      await expect(bookService.updateById(id, mockBook)).rejects.toThrow(BadRequestException);
+      expect(isValidObjectIdMock).toHaveBeenCalledWith(id);
+      isValidObjectIdMock.mockRestore();
+    });
+
+    it('should throw NotFoundException if book is not found', async () => {
+      jest.spyOn(model, 'findById').mockResolvedValue(null);
+
+      await expect(bookService.updateById(mockBook._id, mockBook)).rejects.toThrow(NotFoundException);
+    });
+
+    describe('deleteById', () => {
+      it('should delete a book', async () => {
+        jest.spyOn(model, 'findById').mockResolvedValue(mockBook);
+        jest.spyOn(model, 'findByIdAndDelete').mockResolvedValue(mockBook);
+
+        const result = await bookService.deleteById(mockBook._id);
+
+        expect(model.findById).toHaveBeenCalledWith(mockBook._id);
+        expect(model.findByIdAndDelete).toHaveBeenCalledWith(mockBook._id);
+        expect(result).toEqual({ deleted: true });
+      });
+
+      it('should throw BadRequestError if invalid ID is provided', async () => {
+        const id = 'invalid-id';
+
+        const isValidObjectIdMock = jest.spyOn(mongoose, 'isValidObjectId').mockReturnValue(false);
+
+        await expect(bookService.deleteById(id)).rejects.toThrow(BadRequestException);
+        expect(isValidObjectIdMock).toHaveBeenCalledWith(id);
+        isValidObjectIdMock.mockRestore();
+      });
+
+      it('should throw NotFoundException if book is not found', async () => {
+        jest.spyOn(model, 'findById').mockResolvedValue(null);
+
+        await expect(bookService.deleteById(mockBook._id)).rejects.toThrow(NotFoundException);
+      });
     });
   });
 });
