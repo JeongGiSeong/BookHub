@@ -7,9 +7,9 @@ import { ScraperService } from './scraper.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles } from '../../src/auth/decorators/role.decorator';
-import { Role } from '../../src/auth/enums/role.enum';
-import { RolesGuard } from '../../src/auth/gurads/roles.guard';
+import { Roles } from 'src/auth/decorators/role.decorator';
+import { RolesGuard } from 'src/auth/gurads/roles.guard';
+import { Role } from 'src/auth/enums/role.enum';
 
 @Controller('books')
 export class BookController {
