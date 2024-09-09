@@ -3,9 +3,21 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import mongoose from 'mongoose';
+import { Role } from './../src/auth/enums/role.enum';
 
-describe('AuthController (e2e)', () => {
+describe('ReviewController (e2e)', () => {
   let app: INestApplication;
+  let jwtToken: string;
+  let createdBook;
+
+  const user = {
+    name: 'reviewcontroller',
+    email: 'review@review.com',
+    password: 'review',
+    role: [Role.User],
+  };
+
+  const url = { url: 'https://www.yes24.com/Product/Goods/19040233' };
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -26,12 +38,6 @@ describe('AuthController (e2e)', () => {
     await app.close();
   });
 
-  const user = {
-    name: 'authcontroller',
-    email: 'authcontroller@authcontroller.com',
-    password: 'authcontroller',
-  };
-
   it('/singup (POST)', () => {
     return request(app.getHttpServer())
       .post('/auth/signup')
@@ -39,16 +45,30 @@ describe('AuthController (e2e)', () => {
       .expect(201)
       .then((res) => {
         expect(res.body.token).toBeDefined();
+        jwtToken = res.body.token;
       });
   });
 
-  it('/login (GET)', () => {
+  it('(POST) 새 책 등록', () => {
     return request(app.getHttpServer())
-      .get('/auth/login')
-      .send({ email: user.email, password: user.password })
-      .expect(200)
+      .post('/books')
+      .set('Authorization', `Bearer ${jwtToken}`)
+      .send(url)
+      .expect(201)
       .then((res) => {
-        expect(res.body.token).toBeDefined();
+        expect(res.body._id).toBeDefined();
+        expect(res.body.title).toEqual('자바 ORM 표준 JPA 프로그래밍');
+        createdBook = res.body;
       });
   });
+
+  it('(POST) 리뷰 생성', () => {});
+
+  it('(GET) 모든 리뷰 조회', () => {});
+
+  it('(GET) 리뷰 조회', () => {});
+
+  it('(PATCH) 리뷰 수정', () => {});
+
+  it('(DELETE) 리뷰 삭제', () => {});
 });

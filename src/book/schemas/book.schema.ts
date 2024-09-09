@@ -26,7 +26,7 @@ export class Book {
   @Prop()
   coverImage: string;
 
-  @Prop()
+  @Prop({ unique: [true, 'Duplicated Book'] })
   yes24url: string;
 
   @Prop()

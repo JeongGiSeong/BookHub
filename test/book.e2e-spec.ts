@@ -35,6 +35,7 @@ describe('BookController (e2e)', () => {
 
   afterAll(async () => {
     await mongoose.disconnect();
+    await app.close();
   });
 
   it('/singup (POST)', () => {
