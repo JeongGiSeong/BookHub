@@ -4,7 +4,6 @@ import { CreateReviewDto } from './dtos/create-review.dto';
 import { Query as ExpressQuery } from 'express-serve-static-core';
 import { UpdateReviewDto } from './dtos/update-review.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { ReviewGuard } from './guards/review.guard';
 import { Review } from './shema/review.schema';
 
 @Controller('reviews')
@@ -33,13 +32,17 @@ export class ReviewController {
 
   @Patch(':id')
   @UseGuards(AuthGuard())
-  async updateReview(@Param('id') id: string, @Body() updateReviewDto: UpdateReviewDto): Promise<Review> {
-    return this.reviewService.updateById(id, updateReviewDto);
+  async updateReview(
+    @Param('id') reviewId: string,
+    @Body() updateReviewDto: UpdateReviewDto,
+    @Req() req
+  ): Promise<Review> {
+    return this.reviewService.updateById(reviewId, updateReviewDto, req.user);
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard(), ReviewGuard)
-  async deleteReview(@Param('id') id: string): Promise<{ deleted: boolean }> {
-    return this.reviewService.deleteById(id);
+  @UseGuards(AuthGuard())
+  async deleteReview(@Param('id') reviewId: string, @Req() req): Promise<{ deleted: boolean }> {
+    return this.reviewService.deleteById(reviewId, req.user);
   }
 }

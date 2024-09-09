@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Review } from './shema/review.schema';
 import mongoose, { Model } from 'mongoose';
@@ -7,6 +7,8 @@ import { UpdateReviewDto } from './dtos/update-review.dto';
 
 import { Query } from 'express-serve-static-core';
 import { BookService } from 'src/book/book.service';
+import { User } from 'src/auth/schemas/user.schema';
+import { Role } from 'src/auth/enums/role.enum';
 
 @Injectable()
 export class ReviewService {
@@ -56,9 +58,7 @@ export class ReviewService {
   }
 
   async findById(id: string): Promise<Review> {
-    if (!mongoose.isValidObjectId(id)) {
-      throw new BadRequestException('리뷰 ID가 유효하지 않습니다.');
-    }
+    this.validateReviewId(id);
 
     const review = await this.reviewModel.findById(id);
     if (!review) {
@@ -68,33 +68,51 @@ export class ReviewService {
     return review;
   }
 
-  async updateById(id: string, updateReviewDto: UpdateReviewDto): Promise<Review> {
-    if (!mongoose.isValidObjectId(id)) {
-      throw new BadRequestException('리뷰 ID가 유효하지 않습니다.');
+  async updateById(reviewId: string, updateReviewDto: UpdateReviewDto, user: User): Promise<Review> {
+    this.validateReviewId(reviewId);
+
+    // 작성자, 관리자만 수정 가능
+    const review = await this.reviewModel.findById(reviewId);
+    if (!review) {
+      throw new NotFoundException('리뷰를 찾을 수 없습니다.');
     }
 
-    const updatedReview = await this.reviewModel.findByIdAndUpdate(id, updateReviewDto, {
+    if (review.user.toString() !== user._id.toString() && !user.role.includes(Role.Admin)) {
+      throw new ForbiddenException('권한이 없습니다.');
+    }
+
+    const updatedReview = await this.reviewModel.findByIdAndUpdate(reviewId, updateReviewDto, {
       new: true,
       runValidators: true,
     });
 
-    if (!updatedReview) {
-      throw new NotFoundException('리뷰를 찾을 수 없습니다.');
-    }
-
     return updatedReview;
   }
 
-  async deleteById(id: string): Promise<{ deleted: boolean }> {
-    if (!mongoose.isValidObjectId(id)) {
-      throw new BadRequestException('리뷰 ID가 유효하지 않습니다.');
+  async deleteById(reviewId: string, user: User): Promise<{ deleted: boolean }> {
+    this.validateReviewId(reviewId);
+
+    // 작성자, 관리자만 수정 가능
+    const review = await this.reviewModel.findById(reviewId);
+    if (!review) {
+      throw new NotFoundException('리뷰를 찾을 수 없습니다.');
     }
 
-    const deletedReview = await this.reviewModel.findByIdAndDelete(id);
+    if (review.user.toString() !== user._id.toString() && !user.role.includes(Role.Admin)) {
+      throw new ForbiddenException('권한이 없습니다.');
+    }
+
+    const deletedReview = await this.reviewModel.findByIdAndDelete(reviewId);
     if (!deletedReview) {
       throw new NotFoundException('리뷰를 찾을 수 없습니다.');
     }
 
     return { deleted: true };
+  }
+
+  public validateReviewId(id: string) {
+    if (!mongoose.isValidObjectId(id)) {
+      throw new BadRequestException('리뷰 ID가 유효하지 않습니다.');
+    }
   }
 }
