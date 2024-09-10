@@ -20,13 +20,13 @@ export class ReviewService {
     private bookService: BookService
   ) {}
 
-  async create(createReviewDto: CreateReviewDto, userId: string): Promise<Review> {
+  async create(createReviewDto: CreateReviewDto): Promise<Review> {
     // userId는 @Req()로 받아와서 유효성 검사 스킵
     // 책 유효성 검사
     this.bookService.validateBookId(createReviewDto.bookId);
     await this.bookService.validateBookExist(createReviewDto.bookId);
 
-    const { content, bookId } = createReviewDto;
+    const { content, bookId, userId } = createReviewDto;
     const review = {
       content,
       book: bookId,

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, Length } from 'class-validator';
+import { IsEmpty, IsNotEmpty, IsString, Length } from 'class-validator';
 
 export class CreateReviewDto {
   @IsNotEmpty()
@@ -9,4 +9,7 @@ export class CreateReviewDto {
   @IsNotEmpty()
   @IsString()
   readonly bookId: string;
+
+  @IsEmpty()
+  readonly userId: string;
 }

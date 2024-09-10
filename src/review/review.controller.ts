@@ -17,7 +17,8 @@ export class ReviewController {
     createReviewDto: CreateReviewDto,
     @Req() req
   ): Promise<Review> {
-    return this.reviewService.create(createReviewDto, req.user);
+    createReviewDto = { ...createReviewDto, userId: req.user._id };
+    return this.reviewService.create(createReviewDto);
   }
 
   @Get()
