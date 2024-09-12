@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 
 export enum Category {
   ADVENTURE = 'Adventure',
-  CALSSICS = 'Classics',
+  CLASSICS = 'Classics',
   CRIME = 'Crime',
   FANTASY = 'Fantasy',
 }
@@ -35,6 +35,12 @@ export class Book extends Document {
 
   @Prop()
   publishedAt: string;
+
+  @Prop({ type: [{ rating: Number, user: String }] })
+  ratings: { rating: number; user: string }[];
+
+  @Prop({ type: [{ content: String, user: String }] })
+  reviews: { content: string; user: string }[];
 }
 
 export const BookSchema = SchemaFactory.createForClass(Book);
