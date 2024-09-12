@@ -46,13 +46,23 @@ export class BookService {
     return book;
   }
 
-  async updateById(id: string, book: Book): Promise<Book> {
-    this.validateBookId(id);
-    await this.validateBookExist(id);
-    return await this.bookModel.findByIdAndUpdate(id, book, {
-      new: true,
-      runValidators: true,
-    });
+  async updateById(id: string, newBook: Book): Promise<Book> {
+    try {
+      const book = await this.bookModel.findById(id).exec();
+      if (!book) {
+        throw new NotFoundException('책을 찾을 수 없습니다.');
+      }
+      await this.validateBookExist(id);
+
+      // _id 필드를 제거한 새로운 객체 생성
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { _id, ...updateData } = newBook.toObject();
+
+      Object.assign(book, updateData);
+      return book.save();
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   async deleteById(id: string): Promise<{ deleted: boolean }> {

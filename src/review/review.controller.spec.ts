@@ -2,16 +2,23 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PassportModule } from '@nestjs/passport';
 import { ReviewService } from './review.service';
 import { ReviewController } from './review.controller';
+import { UpdateReviewDto } from './dtos/update-review.dto';
 
 describe('ReviewController', () => {
   let reviewService: ReviewService;
   let reviewController: ReviewController;
 
-  const mockReview = {
-    _id: '60f3a8b4f6b9f2f8c5e7a2f4',
+  const req = { user: { _id: '66d4a3ac7acc954a2259528e' } };
+
+  const createReviewDto = {
     content: 'Review Content',
     bookId: '60f3a8b4f6b9f2f8c5e7a2f3',
-    user: '66d4a3ac7acc954a2259528e',
+    userId: req.user._id,
+  };
+
+  const mockReview = {
+    _id: '60f3a8b4f6b9f2f8c5e7a2f4',
+    createReviewDto,
   };
 
   const mockReviewService = {
@@ -45,7 +52,7 @@ describe('ReviewController', () => {
 
   describe('createReview', () => {
     it('리뷰 생성 후 반환', async () => {
-      const result = await reviewController.createReview(mockReview, { user: mockReview.user });
+      const result = await reviewController.createReview(createReviewDto, req);
 
       expect(reviewService.create).toHaveBeenCalled();
       expect(result).toEqual(mockReview);
@@ -72,7 +79,8 @@ describe('ReviewController', () => {
 
   describe('updateReview', () => {
     it('리뷰 수정 후 반환', async () => {
-      const result = await reviewController.updateReview(mockReview._id, mockReview);
+      const updateReviewDto: UpdateReviewDto = { content: 'Updated Content' };
+      const result = await reviewController.updateReview(mockReview._id, updateReviewDto, req);
 
       expect(reviewService.updateById).toHaveBeenCalled();
       expect(result).toEqual(mockReview);
@@ -81,7 +89,7 @@ describe('ReviewController', () => {
 
   describe('deleteReview', () => {
     it('리뷰 삭제 후 반환', async () => {
-      const result = await reviewController.deleteReview(mockReview._id);
+      const result = await reviewController.deleteReview(mockReview._id, req);
 
       expect(reviewService.deleteById).toHaveBeenCalled();
       expect(result).toEqual({ deleted: true });

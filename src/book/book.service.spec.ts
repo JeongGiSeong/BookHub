@@ -10,7 +10,7 @@ describe('BookService', () => {
   let model: Model<Book>;
 
   const mockBook = {
-    _id: '60f3a8b4f6b9f2f8c5e7a2f3',
+    _id: new mongoose.Types.ObjectId('60f3a8b4f6b9f2f8c5e7a2f3'),
     title: 'Book Title',
     subtitle: 'Book Subtitle',
     author: 'Book Author',
@@ -19,7 +19,8 @@ describe('BookService', () => {
     yes24url: 'https://www.yes24.com/Product/Goods/77283734',
     publisher: 'Book Publisher',
     publishedAt: '2021-07-19',
-  };
+  } as Book;
+  const mockBookId = mockBook._id.toString();
 
   const mockBookService = {
     findById: jest.fn(),
@@ -60,9 +61,9 @@ describe('BookService', () => {
     it('should find and return a book by id', async () => {
       jest.spyOn(model, 'findById').mockResolvedValue(mockBook);
 
-      const result = await bookService.findById(mockBook._id);
+      const result = await bookService.findById(mockBookId);
 
-      expect(model.findById).toHaveBeenCalledWith(mockBook._id);
+      expect(model.findById).toHaveBeenCalledWith(mockBookId);
       expect(result).toEqual(mockBook);
     });
 
@@ -79,7 +80,7 @@ describe('BookService', () => {
     it('should throw NotFoundException if book is not found', async () => {
       jest.spyOn(model, 'findById').mockResolvedValue(null);
 
-      await expect(bookService.findById(mockBook._id)).rejects.toThrow(NotFoundException);
+      await expect(bookService.findById(mockBookId)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -112,9 +113,9 @@ describe('BookService', () => {
       jest.spyOn(model, 'findById').mockResolvedValue(mockBook);
       jest.spyOn(model, 'findByIdAndUpdate').mockResolvedValue(updatedBook);
 
-      const result = await bookService.updateById(mockBook._id, updatedBook);
+      const result = await bookService.updateById(mockBookId, updatedBook as Book);
 
-      expect(model.findByIdAndUpdate).toHaveBeenCalledWith(mockBook._id, updatedBook, {
+      expect(model.findByIdAndUpdate).toHaveBeenCalledWith(mockBookId, updatedBook, {
         new: true,
         runValidators: true,
       });
@@ -134,7 +135,7 @@ describe('BookService', () => {
     it('should throw NotFoundException if book is not found', async () => {
       jest.spyOn(model, 'findById').mockResolvedValue(null);
 
-      await expect(bookService.updateById(mockBook._id, mockBook)).rejects.toThrow(NotFoundException);
+      await expect(bookService.updateById(mockBookId, mockBook)).rejects.toThrow(NotFoundException);
     });
 
     describe('deleteById', () => {
@@ -142,10 +143,10 @@ describe('BookService', () => {
         jest.spyOn(model, 'findById').mockResolvedValue(mockBook);
         jest.spyOn(model, 'findByIdAndDelete').mockResolvedValue(mockBook);
 
-        const result = await bookService.deleteById(mockBook._id);
+        const result = await bookService.deleteById(mockBookId);
 
-        expect(model.findById).toHaveBeenCalledWith(mockBook._id);
-        expect(model.findByIdAndDelete).toHaveBeenCalledWith(mockBook._id);
+        expect(model.findById).toHaveBeenCalledWith(mockBookId);
+        expect(model.findByIdAndDelete).toHaveBeenCalledWith(mockBookId);
         expect(result).toEqual({ deleted: true });
       });
 
@@ -162,7 +163,7 @@ describe('BookService', () => {
       it('should throw NotFoundException if book is not found', async () => {
         jest.spyOn(model, 'findById').mockResolvedValue(null);
 
-        await expect(bookService.deleteById(mockBook._id)).rejects.toThrow(NotFoundException);
+        await expect(bookService.deleteById(mockBookId)).rejects.toThrow(NotFoundException);
       });
     });
   });

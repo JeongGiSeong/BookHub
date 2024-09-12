@@ -1,10 +1,17 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { Book } from './schemas/book.schema';
+import { Book, Category } from './schemas/book.schema';
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class ScraperService {
+  constructor(
+    @InjectModel(Book.name)
+    private bookModel: Model<Book>
+  ) {}
+
   async scrapeBook(url: string) {
     try {
       const { data } = await axios.get(url);
@@ -17,18 +24,23 @@ export class ScraperService {
       const publisher = $('span.gd_pub').text();
       const publishedAt = $('span.gd_date').text();
 
-      const book = new Book();
-      book.title = title;
-      book.subtitle = subtitle;
-      book.author = author;
-      book.coverImage = coverImage;
-      book.publisher = publisher;
-      book.publishedAt = publishedAt;
-      book.yes24url = url;
+      const book = new this.bookModel({
+        title,
+        subtitle,
+        author,
+        category: Category.ADVENTURE,
+        coverImage,
+        publisher,
+        publishedAt,
+        yes24url: url,
+      });
 
       return book;
     } catch (error) {
-      if (error) throw new HttpException('Failed to scrape book', 500);
+      if (error) {
+        console.error(error);
+        throw new HttpException('Failed to scrape book', 500);
+      }
     }
   }
 }

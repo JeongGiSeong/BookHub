@@ -25,3 +25,4 @@ export class Review extends Document {
 }
 
 export const ReviewSchema = SchemaFactory.createForClass(Review);
+ReviewSchema.index({ book: 1, user: 1 }, { unique: true });
