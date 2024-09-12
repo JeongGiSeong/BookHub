@@ -38,7 +38,7 @@ export class BookService {
   }
 
   async findById(id: string): Promise<Book> {
-    this.validateBookId(id);
+    this.findAndValidateBook(id);
     const book = await this.bookModel.findById(id);
     if (!book) {
       throw new NotFoundException('책을 찾을 수 없습니다.');
@@ -48,11 +48,7 @@ export class BookService {
 
   async updateById(id: string, newBook: Book): Promise<Book> {
     try {
-      const book = await this.bookModel.findById(id).exec();
-      if (!book) {
-        throw new NotFoundException('책을 찾을 수 없습니다.');
-      }
-      await this.validateBookExist(id);
+      const book = await this.findAndValidateBook(id);
 
       // _id 필드를 제거한 새로운 객체 생성
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -66,23 +62,26 @@ export class BookService {
   }
 
   async deleteById(id: string): Promise<{ deleted: boolean }> {
-    this.validateBookId(id);
-    await this.validateBookExist(id);
-    await this.bookModel.findByIdAndDelete(id);
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('유효하지 않은 책 ID입니다.');
+    }
+    const deletedBook = await this.bookModel.findByIdAndDelete(id).exec();
+    if (!deletedBook) {
+      throw new NotFoundException('책을 찾을 수 없습니다.');
+    }
     return { deleted: true };
   }
 
-  validateBookId(id: string): void {
-    const isValidId = mongoose.isValidObjectId(id);
-    if (!isValidId) {
-      throw new BadRequestException('책 ID가 유효하지 않습니다.');
+  public async findAndValidateBook(bookId: string): Promise<Book> {
+    if (!mongoose.Types.ObjectId.isValid(bookId)) {
+      throw new BadRequestException('유효하지 않은 책 ID입니다.');
     }
-  }
 
-  async validateBookExist(id: string): Promise<void> {
-    const book = await this.bookModel.findById(id);
+    const book = await this.bookModel.findById(bookId).exec();
     if (!book) {
       throw new NotFoundException('책을 찾을 수 없습니다.');
     }
+
+    return book;
   }
 }

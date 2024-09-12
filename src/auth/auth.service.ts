@@ -1,10 +1,16 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schemas/user.schema';
 
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { SignUpDto } from './dto/signUp.dto';
 import { LoginDto } from './dto/login.dto';
 
@@ -57,5 +63,18 @@ export class AuthService {
     const token = this.jwtService.sign({ id: user._id });
 
     return { token };
+  }
+
+  public async findAndValidateUser(userId: string): Promise<User> {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('유효하지 않은 사용자 ID입니다.');
+    }
+
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다.');
+    }
+
+    return user;
   }
 }
