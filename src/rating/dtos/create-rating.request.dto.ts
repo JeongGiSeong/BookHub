@@ -5,12 +5,12 @@ export class CreateRatingRequestDto {
   @IsInt()
   @Min(1)
   @Max(5)
-  rating: number;
+  readonly rating: number;
 
   @IsNotEmpty()
   @IsString()
-  bookId: string;
+  readonly bookId: string;
 
   @IsEmpty()
-  userId: string;
+  readonly userId: string;
 }

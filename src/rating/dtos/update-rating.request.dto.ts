@@ -5,11 +5,11 @@ export class UpdateRatingRequestDto {
   @IsInt()
   @Min(1)
   @Max(5)
-  rating: number;
+  readonly rating: number;
 
   @IsEmpty()
-  bookId: string;
+  readonly bookId: string;
 
   @IsEmpty()
-  userId: string;
+  readonly userId: string;
 }
