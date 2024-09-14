@@ -1,18 +1,23 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Book } from './schemas/book.schema';
+import { BadRequestException, HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Book, Category } from './schemas/book.schema';
 import mongoose, { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+import axios from 'axios';
 
 import { Query } from 'express-serve-static-core';
+import * as cheerio from 'cheerio';
 
 @Injectable()
 export class BookService {
+  private readonly logger = new Logger(BookService.name);
+
   constructor(
     @InjectModel(Book.name)
     private bookModel: Model<Book>
   ) {}
 
-  async create(book: Book): Promise<Book> {
+  async create(url: string): Promise<Book> {
+    const book = await this.scrapeBook(url);
     const res = await this.bookModel.create(book);
     return res;
   }
@@ -46,18 +51,22 @@ export class BookService {
     return book;
   }
 
-  async updateById(id: string, newBook: Book): Promise<Book> {
+  async updateById(id: string, url: string): Promise<Book> {
+    const book = await this.findAndValidateBook(id);
+
     try {
-      const book = await this.findAndValidateBook(id);
+      const newBook = await this.scrapeBook(url);
 
       // _id 필드를 제거한 새로운 객체 생성
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { _id, ...updateData } = newBook.toObject();
+      const updateData = { ...newBook.toObject() };
 
       Object.assign(book, updateData);
       return book.save();
     } catch (error) {
-      console.error(error);
+      if (error) {
+        this.logger.error('책을 업데이트하는데 실패했습니다.', error.stack);
+        throw new HttpException('책을 업데이트하는데 실패했습니다.', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
     }
   }
 
@@ -83,5 +92,37 @@ export class BookService {
     }
 
     return book;
+  }
+
+  private async scrapeBook(url: string) {
+    try {
+      const { data } = await axios.get(url);
+      const $ = cheerio.load(data);
+
+      const title = $('.gd_titArea h2.gd_name').text();
+      const subtitle = $('h3.gd_nameE').text();
+      const author = $('span.gd_auth').text();
+      const coverImage = $('div.gd_img img').attr('src');
+      const publisher = $('span.gd_pub').text();
+      const publishedAt = $('span.gd_date').text();
+
+      const book = new this.bookModel({
+        title,
+        subtitle,
+        author,
+        category: Category.ADVENTURE,
+        coverImage,
+        publisher,
+        publishedAt,
+        yes24url: url,
+      });
+
+      return book;
+    } catch (error) {
+      if (error) {
+        this.logger.error('책을 불러오는데 실패했습니다.', error.stack);
+        throw new HttpException('책을 불러오는데 실패했습니다.', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+    }
   }
 }
