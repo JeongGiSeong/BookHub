@@ -1,5 +1,5 @@
 import { BadRequestException, HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Book, Category } from './schemas/book.schema';
+import { Book } from './schemas/book.schema';
 import mongoose, { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import axios from 'axios';
@@ -99,18 +99,19 @@ export class BookService {
       const { data } = await axios.get(url);
       const $ = cheerio.load(data);
 
-      const title = $('.gd_titArea h2.gd_name').text();
-      const subtitle = $('h3.gd_nameE').text();
-      const author = $('span.gd_auth').text();
+      const title = $('.gd_titArea h2.gd_name').text().trim();
+      const subtitle = $('h3.gd_nameE').text().trim();
+      const author = $('span.gd_auth').text().trim();
       const coverImage = $('div.gd_img img').attr('src');
-      const publisher = $('span.gd_pub').text();
-      const publishedAt = $('span.gd_date').text();
+      const publisher = $('span.gd_pub').text().trim();
+      const publishedAt = $('span.gd_date').text().trim();
+      const category = $('.yLocaSet .yLocaDepth').eq(1).text().trim();
 
       const book = new this.bookModel({
         title,
         subtitle,
         author,
-        category: Category.ADVENTURE,
+        category,
         coverImage,
         publisher,
         publishedAt,
