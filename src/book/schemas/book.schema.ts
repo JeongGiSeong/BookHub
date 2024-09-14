@@ -1,5 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
+import { User } from 'src/auth/schemas/user.schema';
+import { Review } from 'src/review/schemas/review.schema';
 
 @Schema({
   timestamps: true,
@@ -29,28 +31,15 @@ export class Book extends Document {
   @Prop()
   publishedAt: string;
 
-  @Prop({
-    type: [
-      {
-        rating: Number,
-        content: String,
-        userId: String,
-        likes: [{ userId: String }],
-        disklikes: [{ userId: String }],
-        createdAt: { type: Date, default: Date.now },
-        updatedAt: { type: Date, default: Date.now },
-      },
-    ],
-  })
-  reviews: {
-    rating: number;
-    content: string;
-    userId: string;
-    likes: { userId: string }[];
-    dislikes: { userId: string }[];
-    createdAt?: Date;
-    updatedAt?: Date;
-  }[];
+  @Prop()
+  rating: { avg: number; count: number };
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }] })
+  reviews: Review[];
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
+  bookmarks: User[];
 }
 
 export const BookSchema = SchemaFactory.createForClass(Book);
+BookSchema.index({ title: 1, author: 1 }, { unique: true });
