@@ -93,7 +93,7 @@ describe('ReviewService', () => {
 
       const result = await reviewService.create(createReviewDto);
 
-      expect(bookService.validateBookId).toHaveBeenCalledWith(createReviewDto.bookId);
+      expect(bookService.findAndValidateBook).toHaveBeenCalledWith(createReviewDto.bookId);
       expect(bookService.validateBookExist).toHaveBeenCalledWith(createReviewDto.bookId);
       expect(model.create).toHaveBeenCalledWith({
         content: createReviewDto.content,

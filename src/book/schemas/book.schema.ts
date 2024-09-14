@@ -36,11 +36,28 @@ export class Book extends Document {
   @Prop()
   publishedAt: string;
 
-  @Prop({ type: [{ rating: Number, user: String }] })
-  ratings: { rating: number; user: string }[];
-
-  @Prop({ type: [{ content: String, user: String }] })
-  reviews: { content: string; user: string }[];
+  @Prop({
+    type: [
+      {
+        rating: Number,
+        content: String,
+        userId: String,
+        likes: [{ userId: String }],
+        disklikes: [{ userId: String }],
+        createdAt: { type: Date, default: Date.now },
+        updatedAt: { type: Date, default: Date.now },
+      },
+    ],
+  })
+  reviews: {
+    rating: number;
+    content: string;
+    userId: string;
+    likes: { userId: string }[];
+    dislikes: { userId: string }[];
+    createdAt?: Date;
+    updatedAt?: Date;
+  }[];
 }
 
 export const BookSchema = SchemaFactory.createForClass(Book);

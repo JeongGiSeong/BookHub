@@ -17,13 +17,13 @@ export class RatingController {
   }
 
   // 특정 책의 평점 평균
-  @Get('average/book/:id')
+  @Get('book/:id')
   async getAverageRatingByBookId(@Param('id') bookId: string): Promise<number> {
     return this.ratingService.getAverageRatingByBookId(bookId);
   }
 
   // 특정 사용자의 평점 평균
-  @Get('average/user/:id')
+  @Get('user/:id')
   async getAverageRatingByUserId(@Param('id') userId: string): Promise<number> {
     return this.ratingService.getAverageRatingByUserId(userId);
   }

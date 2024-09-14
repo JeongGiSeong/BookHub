@@ -22,16 +22,18 @@ export class RatingService {
   async create(ratingData: CreateRatingRequestDto): Promise<RatingReponseDto> {
     const { rating, userId, bookId } = ratingData;
 
-    await this.authService.findAndValidateUser(userId);
     const book = await this.bookService.findAndValidateBook(bookId);
 
     // 사용자 ID로 평점이 이미 존재하는지 확인
-    const existingRating = book.ratings.find((r) => r.user === userId);
+    const existingRating = book.ratings.find((r) => r.userId === userId);
     if (existingRating) {
       throw new ConflictException('이미 평점을 등록했습니다.');
     }
 
-    book.ratings.push({ rating: ratingData.rating, user: userId });
+    book.ratings.push({
+      rating: ratingData.rating,
+      userId: userId,
+    });
     await book.save();
 
     this.logger.log(`User[${userId}]가 Book[${bookId}]에 Rating 생성`);
@@ -49,7 +51,7 @@ export class RatingService {
       return 0; // 평점이 없는 경우 0 반환
     }
     const total = books.reduce((sum, book) => {
-      const userRating = book.ratings.find((r) => r.user === userId);
+      const userRating = book.ratings.find((r) => r.userId === userId);
       return sum + userRating.rating;
     }, 0);
     const average = total / books.length;
@@ -83,7 +85,7 @@ export class RatingService {
 
     const book = await this.bookService.findAndValidateBook(bookId);
 
-    const ratingIndex = book.ratings.findIndex((r) => r.user === userId);
+    const ratingIndex = book.ratings.findIndex((r) => r.userId === userId);
     if (ratingIndex === -1) {
       throw new NotFoundException('평점을 찾을 수 없습니다.');
     }
@@ -113,7 +115,7 @@ export class RatingService {
       throw new NotFoundException('책을 찾을 수 없습니다.');
     }
 
-    const ratingIndex = book.ratings.findIndex((r) => r.user === userId);
+    const ratingIndex = book.ratings.findIndex((r) => r.userId === userId);
     if (ratingIndex === -1) {
       throw new NotFoundException('평점을 찾을 수 없습니다.');
     }
