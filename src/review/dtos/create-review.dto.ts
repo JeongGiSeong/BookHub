@@ -7,8 +7,8 @@ export class CreateReviewDto {
   readonly rating: number;
 
   @IsString()
-  @Length(1, 500)
-  readonly content?: string;
+  @Length(1, 1000)
+  readonly content: string;
 
   @IsNotEmpty()
   @IsString()

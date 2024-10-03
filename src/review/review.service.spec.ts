@@ -19,7 +19,7 @@ describe('ReviewService', () => {
     name: 'User',
     email: 'uesr@user.com',
     password: 'password',
-    role: [Role.User],
+    role: [Role.USER],
   } as unknown as User & mongoose.Document;
 
   const anotherUser = {
@@ -27,7 +27,7 @@ describe('ReviewService', () => {
     name: 'Another User',
     email: 'another@another.com',
     password: 'password',
-    role: [Role.User],
+    role: [Role.USER],
   } as unknown as User & mongoose.Document;
 
   const admin = {
@@ -35,7 +35,7 @@ describe('ReviewService', () => {
     name: 'Admin',
     email: 'admin@admin.com',
     password: 'password',
-    role: [Role.User, Role.Admin],
+    role: [Role.USER, Role.ADMIN],
   } as unknown as User & mongoose.Document;
 
   const createReviewDto: CreateReviewDto = {

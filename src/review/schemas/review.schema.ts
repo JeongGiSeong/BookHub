@@ -7,7 +7,7 @@ import { Book } from 'src/book/schemas/book.schema';
   timestamps: true,
 })
 export class Review extends Document {
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Book' })
   bookId: Book;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
@@ -19,12 +19,18 @@ export class Review extends Document {
   @Prop()
   rating: number;
 
-  @Prop()
-  likes: number;
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
+  likes: mongoose.Types.ObjectId[];
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
+  dislikes: mongoose.Types.ObjectId[];
 
   @Prop()
-  dislikes: number;
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
 }
 
 export const RatingSchema = SchemaFactory.createForClass(Review);
-RatingSchema.index({ book: 1, user: 1 }, { unique: true });
+RatingSchema.index({ bookId: 1, userId: 1 }, { unique: true });

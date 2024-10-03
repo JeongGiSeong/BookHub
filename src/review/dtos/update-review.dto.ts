@@ -7,11 +7,10 @@ export class UpdateReviewDto {
   readonly rating: number;
 
   @IsString()
-  @Length(1, 500)
+  @Length(0, 1000)
   readonly content?: string;
 
-  @IsNotEmpty()
-  @IsString()
+  @IsEmpty()
   readonly bookId: string;
 
   @IsEmpty()

@@ -7,47 +7,58 @@ import { BookService } from 'src/book/book.service';
 import { User } from 'src/auth/schemas/user.schema';
 import { Role } from 'src/auth/enums/role.enum';
 import { Book } from 'src/book/schemas/book.schema';
-import { AuthService } from 'src/auth/auth.service';
 import { ReviewResponseDto } from './dtos/review.response.dto';
 import { ReviewsResponseDto } from './dtos/reviews.response.dto';
 
 import { Query } from 'express-serve-static-core';
+import { Review } from './schemas/review.schema';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class ReviewService {
   private readonly logger = new Logger(ReviewService.name);
 
   constructor(
-    @InjectModel(Book.name)
-    private readonly bookModel: Model<Book>,
+    @InjectModel(Review.name)
+    private readonly reviewModel: Model<Review>,
     private bookService: BookService,
     private authService: AuthService
   ) {}
 
   async create(createReviewDto: CreateReviewDto): Promise<ReviewResponseDto> {
-    const { content, bookId, userId } = createReviewDto;
+    const { rating, bookId, userId } = createReviewDto;
     const book = await this.bookService.findAndValidateBook(bookId);
+    const user = await this.authService.findAndValidateUser(userId);
 
     // 사용자 ID로 리뷰가 이미 존재하는지 확인
-    const existingReview = book.reviews.find((r) => r.userId === userId);
-    if (existingReview) {
-      throw new ForbiddenException('이미 리뷰를 등록했습니다.');
-    }
+    this.checkExistingReview(book, userId);
 
-    const newReview = {
-      content,
-      userId: userId,
-    };
+    // 책 평점 업데이트
+    await this.updateBookRating(book, rating);
 
-    book.reviews.push(newReview);
+    // 리뷰 생성
+    const review = new this.reviewModel({
+      ...createReviewDto,
+      user: user._id,
+      book: book._id,
+    });
+    await review.save();
+
+    return new ReviewResponseDto(user, review);
+  }
+
+  private async updateBookRating(book: Book, rating: number) {
+    const totalRating = book.reviews.reduce((acc, cur) => acc + cur.rating, 0);
+    const avgRating = (totalRating + rating) / (book.reviews.length + 1);
+    book.avgRating = avgRating;
     await book.save();
+  }
 
-    this.logger.log(`User[${userId}]가 Book[${bookId}]에 Review 생성`);
-
-    return {
-      bookId: bookId,
-      ...newReview,
-    };
+  private checkExistingReview(book: Book, userId: string) {
+    const existingReview = book.reviews.find((r) => r.userId.toString() === userId);
+    if (existingReview) {
+      throw new BadRequestException('이미 리뷰를 작성했습니다.');
+    }
   }
 
   async findReviewsByBookId(bookId: string, query: Query): Promise<ReviewsResponseDto> {
@@ -57,64 +68,124 @@ export class ReviewService {
     const sort = String(query.sort) || 'createdAt';
     const order = String(query.order) === 'asc' ? 1 : -1;
 
-    const book = await this.bookModel.findById(bookId).select('reviews').exec();
+    const book = await this.bookService.findAndValidateBook(bookId);
+    const reviews = await this.reviewModel
+      .find({ bookId: book._id })
+      .populate('userId')
+      .sort({ [sort]: order })
+      .skip(skip)
+      .limit(resPerPage);
 
-    if (!book) {
-      throw new NotFoundException('리뷰가 없습니다.');
-    }
+    // 사용자 정보를 포함하여 ReviewsResponseDto 생성
+    const reviewsResponse = await Promise.all(
+      reviews.map(async (review) => {
+        const user = await this.authService.findAndValidateUser(review.userId.toString());
+        return new ReviewResponseDto(user, review);
+      })
+    );
 
-    // 리뷰 배열의 복사본을 만들어 정렬
-    const sortedReviews = [...book.reviews].sort((a, b) => {
-      if (a[sort] < b[sort]) return -order;
-      if (a[sort] > b[sort]) return order;
-      return 0;
-    });
-    const paginatedReviews = sortedReviews.slice(skip, skip + resPerPage);
-
-    return { bookId, reviews: paginatedReviews };
+    return new ReviewsResponseDto(book, reviewsResponse);
   }
 
-  // TODO: 사용자가 리뷰를 단 책 목록
+  // 사용자가 리뷰를 단 책 목록
+  async findReviewsByUserId(userId: string, query: Query): Promise<ReviewsResponseDto> {
+    const resPerPage = Number(query.limit) || 10;
+    const curPage = Number(query.page) || 1;
+    const skip = (curPage - 1) * resPerPage;
+    const sort = String(query.sort) || 'createdAt';
+    const order = String(query.order) === 'asc' ? 1 : -1;
 
-  async updateById(bookId: string, updateReviewDto: UpdateReviewDto): Promise<ReviewResponseDto> {
-    const { content, userId } = updateReviewDto;
-    const book = await this.bookService.findAndValidateBook(bookId);
+    const user = await this.authService.findAndValidateUser(userId);
+    const reviews = await this.reviewModel
+      .find({ userId: user._id })
+      .populate('bookId')
+      .sort({ [sort]: order })
+      .skip(skip)
+      .limit(resPerPage);
 
-    // 사용자 ID로 리뷰가 이미 존재하는지 확인
-    const existingReview = book.reviews.find((r) => r.userId === userId);
-    if (!existingReview) {
+    const reviewsResponse = reviews.map((review) => {
+      return new ReviewResponseDto(user, review);
+    });
+
+    return new ReviewsResponseDto(user, reviewsResponse);
+  }
+
+  async updateById(updateReviewDto: UpdateReviewDto): Promise<ReviewResponseDto> {
+    const { rating, content, bookId, userId } = updateReviewDto;
+    await this.bookService.findAndValidateBook(bookId);
+    const user = await this.authService.findAndValidateUser(userId);
+
+    // 작성자만 수정 가능
+    const review = await this.reviewModel.findOne({ bookId, userId });
+    if (!review) {
       throw new NotFoundException('리뷰를 찾을 수 없습니다.');
     }
 
-    // 리뷰 내용 수정
-    existingReview.content = content;
-    existingReview.updatedAt = new Date();
-    await book.save();
+    review.rating = rating;
+    review.content = content;
+    await review.save();
 
-    return {
-      bookId: bookId,
-      ...existingReview,
-    };
+    return new ReviewResponseDto(user, review);
   }
 
   async deleteById(reviewId: string, user: User): Promise<{ deleted: boolean }> {
-    this.validateReviewId(reviewId);
+    if (!mongoose.Types.ObjectId.isValid(reviewId)) {
+      throw new BadRequestException('잘못된 ID입니다.');
+    }
 
-    // 작성자, 관리자만 수정 가능
+    // 본인 또는 관리자만 삭제 가능
+    const review = await this.reviewModel.findById(reviewId);
+
+    if (!review) {
+      throw new NotFoundException('리뷰를 찾을 수 없습니다.');
+    }
+
+    if (review.userId.toString() !== user._id && !user.role.includes(Role.ADMIN)) {
+      throw new ForbiddenException('권한이 없습니다.');
+    }
+
+    await review.deleteOne();
+
+    // 리뷰 삭제 후 책 평점 업데이트
+    const book = await this.bookService.findAndValidateBook(review.bookId.toString());
+    await this.updateBookRating(book, -review.rating);
+
+    return { deleted: true };
+  }
+
+  async toggleLikeReview(reviewId: string, user: User): Promise<void> {
     const review = await this.reviewModel.findById(reviewId);
     if (!review) {
       throw new NotFoundException('리뷰를 찾을 수 없습니다.');
     }
 
-    if (review.user.toString() !== user._id.toString() && !user.role.includes(Role.Admin)) {
-      throw new ForbiddenException('권한이 없습니다.');
-    }
+    const userId = new mongoose.Types.ObjectId(user._id.toString());
 
-    const deletedReview = await this.reviewModel.findByIdAndDelete(reviewId);
-    if (!deletedReview) {
+    // 이미 좋아요를 눌렀는지 확인
+    const likeIndex = review.likes.indexOf(userId);
+    if (likeIndex > -1) {
+      review.likes.splice(likeIndex, 1);
+    } else {
+      review.likes.push(userId);
+    }
+    await review.save();
+  }
+
+  async toggleDislikeReview(reviewId: string, user: User): Promise<void> {
+    const review = await this.reviewModel.findById(reviewId);
+    if (!review) {
       throw new NotFoundException('리뷰를 찾을 수 없습니다.');
     }
 
-    return { deleted: true };
+    const userId = new mongoose.Types.ObjectId(user._id.toString());
+
+    // 이미 싫어요를 눌렀는지 확인
+    const dislikeIndex = review.dislikes.indexOf(userId);
+    if (dislikeIndex > -1) {
+      review.dislikes.splice(dislikeIndex, 1);
+    } else {
+      review.dislikes.push(userId);
+    }
+    await review.save();
   }
 }
