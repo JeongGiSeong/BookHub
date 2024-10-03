@@ -22,6 +22,8 @@ export class BookService {
     return res;
   }
 
+  // TODO: 저자, 출판사, 카테고리 등 다른 필드에 대한 검색 기능을 추가
+  // 출판일, 평점, 제목 순으로 정렬할 수 있는 옵션을 제공
   async findAll(query: Query): Promise<Book[]> {
     const resPerPage = 10;
     const curPage = Number(query.page) || 1;

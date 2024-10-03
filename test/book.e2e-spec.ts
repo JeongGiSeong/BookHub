@@ -14,7 +14,7 @@ describe('BookController (e2e)', () => {
     name: 'bookcontroller',
     email: 'bookcontroller@bookcontroller.com',
     password: 'bookcontroller',
-    role: [Role.User, Role.Admin],
+    role: [Role.USER, Role.ADMIN],
   };
 
   const url = { url: 'https://www.yes24.com/Product/Goods/77283734' };

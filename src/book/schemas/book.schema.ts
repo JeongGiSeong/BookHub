@@ -7,6 +7,9 @@ import { Review } from 'src/review/schemas/review.schema';
   timestamps: true,
 })
 export class Book extends Document {
+  @Prop({ unique: [true, '책 중복'] })
+  yes24url: string;
+
   @Prop()
   title: string;
 
@@ -22,9 +25,6 @@ export class Book extends Document {
   @Prop()
   coverImage: string;
 
-  @Prop({ unique: [true, 'Duplicated Book'] })
-  yes24url: string;
-
   @Prop()
   publisher: string;
 
@@ -32,14 +32,19 @@ export class Book extends Document {
   publishedAt: string;
 
   @Prop()
-  rating: { avg: number; count: number };
+  avgRating: number;
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }] })
   reviews: Review[];
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
   bookmarks: User[];
+
+  @Prop()
+  createdAt: Date;
+
+  @Prop()
+  updatedAt: Date;
 }
 
 export const BookSchema = SchemaFactory.createForClass(Book);
-BookSchema.index({ title: 1, author: 1 }, { unique: true });

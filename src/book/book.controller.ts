@@ -27,14 +27,14 @@ export class BookController {
   }
 
   @Patch(':id')
-  @Roles(Role.Admin)
+  @Roles(Role.ADMIN)
   @UseGuards(AuthGuard(), RolesGuard)
   async updateBook(@Param('id') id: string, @Body() url: string): Promise<Book> {
     return this.bookService.updateById(id, url);
   }
 
   @Delete(':id')
-  @Roles(Role.Admin)
+  @Roles(Role.ADMIN)
   @UseGuards(AuthGuard(), RolesGuard)
   async deleteBook(@Param('id') id: string): Promise<{ deleted: boolean }> {
     return this.bookService.deleteById(id);
