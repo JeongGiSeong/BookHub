@@ -6,7 +6,6 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { ReviewModule } from './review/review.module';
-import { RatingModule } from './rating/rating.module';
 
 @Module({
   imports: [
@@ -18,7 +17,6 @@ import { RatingModule } from './rating/rating.module';
     BookModule,
     AuthModule,
     ReviewModule,
-    RatingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

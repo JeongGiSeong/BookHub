@@ -11,13 +11,13 @@ describe('BookController (e2e)', () => {
   let createdBook;
 
   const admin = {
-    name: 'bookcontroller',
-    email: 'bookcontroller@bookcontroller.com',
-    password: 'bookcontroller',
-    role: [Role.User, Role.Admin],
+    name: 'test',
+    email: 'test@test.com',
+    password: 'password',
+    role: [Role.USER, Role.ADMIN],
   };
 
-  const url = { url: 'https://www.yes24.com/Product/Goods/77283734' };
+  const url = 'https://www.yes24.com/Product/Goods/77283734';
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -53,7 +53,7 @@ describe('BookController (e2e)', () => {
     return request(app.getHttpServer())
       .post('/books')
       .set('Authorization', `Bearer ${jwtToken}`)
-      .send(url)
+      .send({ url })
       .expect(201)
       .then((res) => {
         expect(res.body._id).toBeDefined();
@@ -86,6 +86,7 @@ describe('BookController (e2e)', () => {
 
     return request(app.getHttpServer())
       .patch(`/books/${createdBook._id}`)
+      .set('Authorization', `Bearer ${jwtToken}`)
       .send(newUrl)
       .expect(200)
       .then((res) => {

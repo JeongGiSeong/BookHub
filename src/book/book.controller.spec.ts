@@ -1,13 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BookService } from './book.service';
-import { Category } from './schemas/book.schema';
 import { BookController } from './book.controller';
-import { ScraperService } from './scraper.service';
 import { PassportModule } from '@nestjs/passport';
 
 describe('BookController', () => {
   let bookService: BookService;
-  let scraperService: ScraperService;
   let bookController: BookController;
 
   const mockBook = {
@@ -15,7 +12,7 @@ describe('BookController', () => {
     title: 'Book Title',
     subtitle: 'Book Subtitle',
     author: 'Book Author',
-    category: Category.FANTASY,
+    category: '카테고리',
     coverImage: 'https://about.google/assets-main/img/glue-google-color-logo.svg',
     yes24url: 'https://www.yes24.com/Product/Goods/77283734',
     publisher: 'Book Publisher',
@@ -31,9 +28,6 @@ describe('BookController', () => {
     updateById: jest.fn().mockResolvedValue(mockBook),
     deleteById: jest.fn().mockResolvedValue({ deleted: true }),
   };
-  const mockScraperService = {
-    scrapeBook: jest.fn().mockResolvedValue(mockBook),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -41,20 +35,14 @@ describe('BookController', () => {
       controllers: [BookController],
       providers: [
         BookService,
-        ScraperService,
         {
           provide: BookService,
           useValue: mockBookService,
-        },
-        {
-          provide: ScraperService,
-          useValue: mockScraperService,
         },
       ],
     }).compile();
 
     bookService = module.get<BookService>(BookService);
-    scraperService = module.get<ScraperService>(ScraperService);
     bookController = module.get<BookController>(BookController);
   });
 
@@ -85,9 +73,8 @@ describe('BookController', () => {
 
   describe('createBook', () => {
     it('새 책 생성', async () => {
-      const result = await bookController.createBook({ url });
+      const result = await bookController.createBook(url);
 
-      expect(scraperService.scrapeBook).toHaveBeenCalled();
       expect(bookService.create).toHaveBeenCalled();
       expect(result).toEqual(mockBook);
     });
@@ -95,9 +82,8 @@ describe('BookController', () => {
 
   describe('updateBook', () => {
     it('ID로 책 업데이트', async () => {
-      const result = await bookController.updateBook(mockBook._id, { url });
+      const result = await bookController.updateBook(mockBook._id, url);
 
-      expect(scraperService.scrapeBook).toHaveBeenCalled();
       expect(bookService.updateById).toHaveBeenCalled();
       expect(result).toEqual(mockBook);
     });

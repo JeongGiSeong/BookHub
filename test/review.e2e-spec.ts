@@ -17,21 +17,21 @@ describe('ReviewController (e2e)', () => {
     name: 'reviewcontroller',
     email: 'review@review.com',
     password: 'review',
-    role: [Role.User],
+    role: [Role.USER],
   };
 
   const anotherUser = {
     name: 'anotherUesr',
     email: 'anotherUesr@anotherUesr.com',
     password: 'anotherUesr',
-    role: [Role.User],
+    role: [Role.USER],
   };
 
   const admin = {
     name: 'admin',
     email: 'admin@admin.com',
     password: 'admin',
-    role: [Role.User, Role.Admin],
+    role: [Role.USER, Role.ADMIN],
   };
 
   const url = { url: 'https://www.yes24.com/Product/Goods/19040233' };
