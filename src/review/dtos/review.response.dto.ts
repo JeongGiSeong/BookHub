@@ -27,7 +27,7 @@ export class ReviewResponseDto {
     this.content = review.content;
     this.createdAt = review.createdAt;
     this.updatedAt = review.updatedAt;
-    this.likes = review.likes;
-    this.dislikes = review.dislikes;
+    this.likes = Number(review.likes);
+    this.dislikes = Number(review.dislikes);
   }
 }
