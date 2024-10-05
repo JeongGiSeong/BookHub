@@ -1,20 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BookService } from './book.service';
 import { getModelToken } from '@nestjs/mongoose';
-import { Book, Category } from './schemas/book.schema';
+import { Book } from './schemas/book.schema';
 import mongoose, { Model } from 'mongoose';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 
 describe('BookService', () => {
   let bookService: BookService;
-  let model: Model<Book>;
+  let bookModel: Model<Book>;
 
   const mockBook = {
     _id: new mongoose.Types.ObjectId('60f3a8b4f6b9f2f8c5e7a2f3'),
     title: 'Book Title',
     subtitle: 'Book Subtitle',
     author: 'Book Author',
-    category: Category.FANTASY,
+    category: 'Category',
     coverImage: 'https://about.google/assets-main/img/glue-google-color-logo.svg',
     yes24url: 'https://www.yes24.com/Product/Goods/77283734',
     publisher: 'Book Publisher',
@@ -42,53 +42,38 @@ describe('BookService', () => {
     }).compile();
 
     bookService = module.get<BookService>(BookService);
-    model = module.get<Model<Book>>(getModelToken(Book.name));
+    bookModel = module.get<Model<Book>>(getModelToken(Book.name));
   });
 
   describe('create', () => {
-    it('should create and return a book', async () => {
-      // create는 배열 또는 단일 객체를 반환할 수 있으므로 any로 타입을 지정
-      jest.spyOn(model, 'create').mockResolvedValue(mockBook as any);
+    it('성공 - 책 생성 후 반환', async () => {
+      jest.spyOn(bookService, 'scrapeBook').mockResolvedValue(mockBook);
+      jest.spyOn(bookModel, 'create').mockResolvedValue(mockBook as any);
 
-      const result = await bookService.create(mockBook);
+      const result = await bookService.create(mockBook.yes24url);
 
-      expect(model.create).toHaveBeenCalledWith(mockBook);
-      expect(result).toEqual(mockBook);
-    });
-  });
-
-  describe('findById', () => {
-    it('should find and return a book by id', async () => {
-      jest.spyOn(model, 'findById').mockResolvedValue(mockBook);
-
-      const result = await bookService.findById(mockBookId);
-
-      expect(model.findById).toHaveBeenCalledWith(mockBookId);
+      expect(bookService.scrapeBook).toHaveBeenCalledWith(mockBook.yes24url);
+      expect(bookModel.create).toHaveBeenCalledWith(mockBook);
       expect(result).toEqual(mockBook);
     });
 
-    it('should throw BadRequestError if invalid ID is provided', async () => {
-      const id = 'invalid-id';
+    it('실패 - scrapeBook 오류', async () => {
+      jest
+        .spyOn(bookService, 'scrapeBook')
+        .mockRejectedValue(new HttpException('책을 불러오는데 실패했습니다.', HttpStatus.INTERNAL_SERVER_ERROR));
 
-      const isValidObjectIdMock = jest.spyOn(mongoose, 'isValidObjectId').mockReturnValue(false);
+      const url = mockBook.yes24url;
 
-      await expect(bookService.findById(id)).rejects.toThrow(BadRequestException);
-      expect(isValidObjectIdMock).toHaveBeenCalledWith(id);
-      isValidObjectIdMock.mockRestore();
-    });
-
-    it('should throw NotFoundException if book is not found', async () => {
-      jest.spyOn(model, 'findById').mockResolvedValue(null);
-
-      await expect(bookService.findById(mockBookId)).rejects.toThrow(NotFoundException);
+      await expect(bookService.create(url)).rejects.toThrow(HttpException);
+      await expect(bookService.create(url)).rejects.toThrow('책을 불러오는데 실패했습니다.');
     });
   });
 
   describe('findAll', () => {
-    it('should find and return all books', async () => {
+    it('성공 - 모든 책 조회 후 반환', async () => {
       const query = { keyword: 'Book', page: '1' };
 
-      jest.spyOn(model, 'find').mockImplementation(
+      jest.spyOn(bookModel, 'find').mockImplementation(
         () =>
           ({
             limit: () => ({
@@ -99,71 +84,129 @@ describe('BookService', () => {
 
       const result = await bookService.findAll(query);
 
-      expect(model.find).toHaveBeenCalledWith({
+      expect(bookModel.find).toHaveBeenCalledWith({
         title: { $regex: query.keyword, $options: 'i' },
       });
       expect(result).toEqual([mockBook]);
     });
   });
 
-  describe('updateById', () => {
-    it('should update and return a book', async () => {
-      const updatedBook = { ...mockBook, title: 'Updated Title' };
+  describe('findById', () => {
+    it('성공 - 책 조회 후 반환', async () => {
+      jest.spyOn(bookService, 'findAndValidateBook').mockResolvedValue(mockBook);
 
-      jest.spyOn(model, 'findById').mockResolvedValue(mockBook);
-      jest.spyOn(model, 'findByIdAndUpdate').mockResolvedValue(updatedBook);
+      const result = await bookService.findById(mockBookId);
 
-      const result = await bookService.updateById(mockBookId, updatedBook as Book);
-
-      expect(model.findByIdAndUpdate).toHaveBeenCalledWith(mockBookId, updatedBook, {
-        new: true,
-        runValidators: true,
-      });
-      expect(result).toEqual(updatedBook);
+      expect(bookService.findAndValidateBook).toHaveBeenCalledWith(mockBookId);
+      expect(result).toEqual(mockBook);
     });
 
-    it('should throw BadRequestError if invalid ID is provided', async () => {
+    it('실패 - Invalid ID', async () => {
       const id = 'invalid-id';
 
-      const isValidObjectIdMock = jest.spyOn(mongoose, 'isValidObjectId').mockReturnValue(false);
+      jest.spyOn(bookService, 'findAndValidateBook').mockImplementation(() => {
+        throw new BadRequestException('유효하지 않은 책 ID입니다.');
+      });
 
-      await expect(bookService.updateById(id, mockBook)).rejects.toThrow(BadRequestException);
-      expect(isValidObjectIdMock).toHaveBeenCalledWith(id);
-      isValidObjectIdMock.mockRestore();
+      await expect(bookService.findById(id)).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw NotFoundException if book is not found', async () => {
-      jest.spyOn(model, 'findById').mockResolvedValue(null);
+    it('실패 - 책 조회 실패 시 NotFoundException', async () => {
+      jest.spyOn(bookService, 'findAndValidateBook').mockImplementation(() => {
+        throw new NotFoundException('책을 찾을 수 없습니다.');
+      });
 
-      await expect(bookService.updateById(mockBookId, mockBook)).rejects.toThrow(NotFoundException);
+      await expect(bookService.findById(mockBookId)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateById', () => {
+    it('성공 - 책 정보 업데이트 후 반환', async () => {
+      const url = 'new-url';
+      const newBook = { ...mockBook, yes24url: url } as Book;
+
+      jest.spyOn(mongoose.Types.ObjectId, 'isValid').mockReturnValue(true);
+      jest.spyOn(bookService, 'scrapeBook').mockResolvedValue(newBook);
+      jest.spyOn(bookModel, 'findByIdAndUpdate').mockResolvedValue(newBook);
+
+      const result = await bookService.updateById(mockBookId, url);
+
+      expect(bookService.scrapeBook).toHaveBeenCalledWith(url);
+      expect(bookModel.findByIdAndUpdate).toHaveBeenCalledWith(mockBookId, newBook, { new: true });
+      expect(result).toEqual(newBook);
+    });
+
+    it('실패 - ID가 유효하지 않을 시 BadRequestException', async () => {
+      const id = 'invalid-id';
+
+      jest.spyOn(mongoose.Types.ObjectId, 'isValid').mockReturnValue(false);
+
+      await expect(bookService.updateById(id, mockBook.yes24url)).rejects.toThrow(BadRequestException);
+    });
+
+    it('실패 - 책을 찾을 수 없을 시 NotFoundException', async () => {
+      jest.spyOn(mongoose.Types.ObjectId, 'isValid').mockReturnValue(true);
+      jest.spyOn(bookService, 'scrapeBook').mockResolvedValue(mockBook);
+      jest.spyOn(bookModel, 'findByIdAndUpdate').mockResolvedValue(null);
+
+      await expect(bookService.updateById(mockBookId, mockBook.yes24url)).rejects.toThrow(NotFoundException);
     });
 
     describe('deleteById', () => {
-      it('should delete a book', async () => {
-        jest.spyOn(model, 'findById').mockResolvedValue(mockBook);
-        jest.spyOn(model, 'findByIdAndDelete').mockResolvedValue(mockBook);
+      it('성공 - 책 삭제', async () => {
+        jest.spyOn(mongoose.Types.ObjectId, 'isValid').mockReturnValue(true);
+        jest.spyOn(bookModel, 'findByIdAndDelete').mockResolvedValue(mockBook);
 
         const result = await bookService.deleteById(mockBookId);
 
-        expect(model.findById).toHaveBeenCalledWith(mockBookId);
-        expect(model.findByIdAndDelete).toHaveBeenCalledWith(mockBookId);
+        expect(mongoose.Types.ObjectId.isValid).toHaveBeenCalledWith(mockBookId);
+        expect(bookModel.findByIdAndDelete).toHaveBeenCalledWith(mockBookId);
         expect(result).toEqual({ deleted: true });
       });
 
-      it('should throw BadRequestError if invalid ID is provided', async () => {
-        const id = 'invalid-id';
+      it('실패 - ID가 유효하지 않을 시 BadRequestException', async () => {
+        const invalidId = 'invalid-id';
+        jest.spyOn(mongoose.Types.ObjectId, 'isValid').mockReturnValue(false);
 
-        const isValidObjectIdMock = jest.spyOn(mongoose, 'isValidObjectId').mockReturnValue(false);
-
-        await expect(bookService.deleteById(id)).rejects.toThrow(BadRequestException);
-        expect(isValidObjectIdMock).toHaveBeenCalledWith(id);
-        isValidObjectIdMock.mockRestore();
+        await expect(bookService.deleteById(invalidId)).rejects.toThrow(BadRequestException);
+        expect(mongoose.Types.ObjectId.isValid).toHaveBeenCalledWith(invalidId);
       });
 
-      it('should throw NotFoundException if book is not found', async () => {
-        jest.spyOn(model, 'findById').mockResolvedValue(null);
+      it('실패 - 책 조회 실패 시 NotFoundException', async () => {
+        jest.spyOn(mongoose.Types.ObjectId, 'isValid').mockReturnValue(true);
+        jest.spyOn(bookModel, 'findByIdAndDelete').mockResolvedValue(null);
 
         await expect(bookService.deleteById(mockBookId)).rejects.toThrow(NotFoundException);
+        expect(bookModel.findByIdAndDelete).toHaveBeenCalledWith(mockBookId);
+      });
+    });
+
+    describe('findAndValidateBook', () => {
+      it('성공 - 책 조회 후 반환', async () => {
+        jest.spyOn(mongoose.Types.ObjectId, 'isValid').mockReturnValue(true);
+        jest.spyOn(bookModel, 'findById').mockResolvedValue(mockBook);
+
+        const result = await bookService.findAndValidateBook(mockBookId);
+
+        expect(mongoose.Types.ObjectId.isValid).toHaveBeenCalledWith(mockBookId);
+        expect(bookModel.findById).toHaveBeenCalledWith(mockBookId);
+        expect(result).toEqual(mockBook);
+      });
+
+      it('실패 - ID가 유효하지 않을 시 BadRequestException', async () => {
+        const invalidId = 'invalid-id';
+        jest.spyOn(mongoose.Types.ObjectId, 'isValid').mockReturnValue(false);
+
+        await expect(bookService.findAndValidateBook(invalidId)).rejects.toThrow(BadRequestException);
+        expect(mongoose.Types.ObjectId.isValid).toHaveBeenCalledWith(invalidId);
+      });
+
+      it('실패 - 책 조회 실패 시 NotFoundException', async () => {
+        jest.spyOn(mongoose.Types.ObjectId, 'isValid').mockReturnValue(true);
+        jest.spyOn(bookModel, 'findById').mockResolvedValue(null);
+
+        await expect(bookService.findAndValidateBook(mockBookId)).rejects.toThrow(NotFoundException);
+        expect(bookModel.findById).toHaveBeenCalledWith(mockBookId);
       });
     });
   });

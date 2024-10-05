@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Logger, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { BookService } from './book.service';
 import { Book } from './schemas/book.schema';
 import { Query as ExpressQuery } from 'express-serve-static-core';
@@ -9,11 +9,12 @@ import { Role } from 'src/auth/enums/role.enum';
 
 @Controller('books')
 export class BookController {
+  private readonly logger = new Logger(BookController.name);
   constructor(private bookService: BookService) {}
 
   @Post()
-  async createBook(@Body() url: string): Promise<Book> {
-    return this.bookService.create(url);
+  async createBook(@Body() body: { url: string }): Promise<Book> {
+    return this.bookService.create(body.url);
   }
 
   @Get(':id')
@@ -29,8 +30,8 @@ export class BookController {
   @Patch(':id')
   @Roles(Role.ADMIN)
   @UseGuards(AuthGuard(), RolesGuard)
-  async updateBook(@Param('id') id: string, @Body() url: string): Promise<Book> {
-    return this.bookService.updateById(id, url);
+  async updateBook(@Param('id') id: string, @Body() body: { url: string }): Promise<Book> {
+    return this.bookService.updateById(id, body.url);
   }
 
   @Delete(':id')
